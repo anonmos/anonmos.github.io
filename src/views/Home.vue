@@ -14,6 +14,12 @@
         <select v-model="country">
           <option v-for="(name, index) in countryNames" :key="index" :value="name">{{name}}</option>
         </select>
+        <select v-if="stateNames.length > 0" v-model="stateProvince">
+          <option v-for="(name, index) in stateNames" :key="index" :value="name">{{name}}</option>
+        </select>
+        <select v-if="countyNames.length > 0" v-model="countyName">
+          <option v-for="(name, index) in countyNames" :key="index" :value="name">{{name}}</option>
+        </select>
       </div>
     </div>
   </div>
@@ -24,6 +30,10 @@
 import Vue from 'vue'
 import COVIDTimeSeries from '@/utils/fetcher'
 import LineChart from '@/components/LineChart.vue'
+import Region from '../classes/region'
+import StateProvince from '../classes/state-province'
+import Country from '../classes/country'
+import County from '../classes/county'
 
 export default Vue.extend({
   name: 'Home',
@@ -34,7 +44,9 @@ export default Vue.extend({
     return {
       loading: true,
       currentCases: new COVIDTimeSeries(),
-      country: 'US'
+      country: 'US',
+      stateProvince: 'All',
+      countyName: 'All'
     }
   },
   computed: {
@@ -47,7 +59,7 @@ export default Vue.extend({
         }]
       }
 
-      const country = this.currentCases.getCountry(this.country)
+      const country = this.getLineChartDataContainer()
       const sortedDates = country.getSortedDateKeys()
       rval.labels = sortedDates
 
@@ -72,10 +84,37 @@ export default Vue.extend({
 
       return countryNames
     },
-    totalCases (): number {
+    stateNames (): string[] {
       const country = this.currentCases.getCountry(this.country)
-      const sortedDates = country.getSortedDateKeys()
-      return country.getDateTotal(sortedDates[sortedDates.length - 1])
+      const stateProvinces = country.getStateProvinceNames()
+      const provincesWithAllSelection = ['All']
+      provincesWithAllSelection.push(...stateProvinces)
+
+      return provincesWithAllSelection.length > 1 ? provincesWithAllSelection : []
+    },
+    countyNames (): string[] {
+      const rval = []
+
+      if (this.stateProvince !== 'All') {
+        const country = this.currentCases.getCountry(this.country)
+        const stateProvince = country.getStateProvince(this.stateProvince)
+
+        if (stateProvince) {
+          const counties = stateProvince.getCountyNames()
+
+          if (counties.length > 0) {
+            rval.push('All')
+            rval.push(...counties)
+          }
+        }
+      }
+
+      return rval
+    },
+    totalCases (): number {
+      const dataContainer = this.getLineChartDataContainer()
+      const sortedDates = dataContainer.getSortedDateKeys()
+      return dataContainer.getDateTotal(sortedDates[sortedDates.length - 1])
     }
   },
   methods: {
@@ -84,6 +123,19 @@ export default Vue.extend({
         xAxisID: 'Date',
         yAxisID: 'Confirmed Cases'
       }
+    },
+    getLineChartDataContainer (): Region {
+      const country: Country = this.currentCases.getCountry(this.country)
+      const stateProvince: StateProvince = country.stateProvinces?.[this.stateProvince]
+      const county: County = stateProvince?.getCounty(this.countyName)
+
+      if (county) {
+        return county
+      } else if (stateProvince) {
+        return stateProvince
+      }
+
+      return country
     }
   },
   async mounted () {

@@ -2,6 +2,10 @@
     height: 100%;
     display: flex;
 
+    .selector {
+      display: flex;
+      flex-direction: column;
+    }
     .chart {
       min-width: 70vh;
       min-height: 70vh;
