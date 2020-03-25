@@ -10,18 +10,26 @@
           Current Total Cases: {{totalCases}}
         </div>
       </div>
-      <div class="selector">
-        <select v-model="country">
-          <option v-for="(name, index) in countryNames" :key="index" :value="name">{{name}}</option>
-        </select>
-        <select v-if="stateNames.length > 0" v-model="stateProvince">
-          <option v-for="(name, index) in stateNames" :key="index" :value="name">{{name}}</option>
-        </select>
-        <select v-if="countyNames.length > 0" v-model="countyName">
-          <option v-for="(name, index) in countyNames" :key="index" :value="name">{{name}}</option>
-        </select>
+      <div class="selector-groups">
+        <div class="selector-group">
+          <select v-model="country">
+            <option v-for="(name, index) in countryNames" :key="index" :value="name">{{name}}</option>
+          </select>
+          <select v-if="stateNames.length > 0" v-model="stateProvince">
+            <option v-for="(name, index) in stateNames" :key="index" :value="name">{{name}}</option>
+          </select>
+          <select v-if="countyNames.length > 0" v-model="countyName">
+            <option v-for="(name, index) in countyNames" :key="index" :value="name">{{name}}</option>
+          </select>
+        </div>
+        <div class="selector-group">
+          <select v-model="mode">
+            <option value="Current Cases">Current Cases</option>
+            <option value="Deaths">Deaths</option>
+          </select>
+        </div>
       </div>
-    </div>
+      </div>
   </div>
 </template>
 
@@ -47,7 +55,9 @@ export default Vue.extend({
       deaths: new COVIDTimeSeries(MODE.DEATHS),
       country: 'US',
       stateProvince: 'All',
-      countyName: 'All'
+      countyName: 'All',
+      mode: 'Current Cases',
+      MODES: ['Current Cases', 'Deaths']
     }
   },
   computed: {
@@ -71,7 +81,7 @@ export default Vue.extend({
       return rval
     },
     countryNames (): string[] {
-      let countryNames = this.currentCases.getCountryNames()
+      let countryNames = this.getCovidContainer().getCountryNames()
 
       countryNames = countryNames.sort((a: string, b: string) => {
         if (a > b) {
@@ -86,7 +96,7 @@ export default Vue.extend({
       return countryNames
     },
     stateNames (): string[] {
-      const country = this.currentCases.getCountry(this.country)
+      const country = this.getCovidContainer().getCountry(this.country)
       const stateProvinces = country.getStateProvinceNames()
       const provincesWithAllSelection = ['All']
       provincesWithAllSelection.push(...stateProvinces)
@@ -97,7 +107,7 @@ export default Vue.extend({
       const rval = []
 
       if (this.stateProvince !== 'All') {
-        const country = this.currentCases.getCountry(this.country)
+        const country = this.getCovidContainer().getCountry(this.country)
         const stateProvince = country.getStateProvince(this.stateProvince)
 
         if (stateProvince) {
@@ -126,7 +136,7 @@ export default Vue.extend({
       }
     },
     getLineChartDataContainer (): Region {
-      const country: Country = this.currentCases.getCountry(this.country)
+      const country: Country = this.getCovidContainer().getCountry(this.country)
       const stateProvince: StateProvince = country.stateProvinces?.[this.stateProvince]
       const county: County = stateProvince?.getCounty(this.countyName)
 
@@ -137,6 +147,9 @@ export default Vue.extend({
       }
 
       return country
+    },
+    getCovidContainer (): COVIDTimeSeries {
+      return this.mode === this.MODES[0] ? this.currentCases : this.deaths
     }
   },
   async mounted () {

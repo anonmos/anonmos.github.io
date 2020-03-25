@@ -2,9 +2,14 @@
     height: 100%;
     display: flex;
 
-    .selector {
+    .selector-groups {
       display: flex;
-      flex-direction: column;
+
+      .selector-group {
+        display: flex;
+        flex-direction: column;
+        margin: 10px;
+      }
     }
     .chart {
       min-width: 70vh;
