@@ -30,19 +30,22 @@ export default class Country extends Region {
     const subRegionNameSplit = cleanSubRegionNameSplit.split(',')
     const state = subRegionNameSplit.length === 1 ? subRegionNameSplit[0].trim() : US_STATES_BY_ABBREVIATION[subRegionNameSplit[1].trim()]
     const county = subRegionNameSplit.length === 1 ? undefined : subRegionNameSplit[0].trim()
+    const isStateValid = state && state?.length > 0 && !this.stateProvinces[state]
 
-    if (!this.stateProvinces[state]) {
+    if (isStateValid) {
       this.stateProvinces[state] = new StateProvince(state)
     }
 
     // Case where this is a row containing data about a specific county.  Be careful not to
     // duplicate the count at the state or country levels.
-    if (county) {
+    if (county && isStateValid) {
       this.stateProvinces[state].pushCountyData(county, row)
     } else {
       const dates = Object.keys(row)
       dates.forEach((date) => {
-        this.stateProvinces[state].incrementDateTotal(date, row[date])
+        if (isStateValid) {
+          this.stateProvinces[state].incrementDateTotal(date, row[date])
+        }
         this.incrementDateTotal(date, row[date])
       })
     }

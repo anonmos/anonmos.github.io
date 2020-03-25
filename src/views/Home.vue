@@ -28,7 +28,7 @@
 <script lang="ts">
 // @ is an alias to /src
 import Vue from 'vue'
-import COVIDTimeSeries from '@/utils/fetcher'
+import COVIDTimeSeries, { MODE } from '@/utils/fetcher'
 import LineChart from '@/components/LineChart.vue'
 import Region from '../classes/region'
 import StateProvince from '../classes/state-province'
@@ -43,7 +43,8 @@ export default Vue.extend({
   data () {
     return {
       loading: true,
-      currentCases: new COVIDTimeSeries(),
+      currentCases: new COVIDTimeSeries(MODE.CURRENT_CASES),
+      deaths: new COVIDTimeSeries(MODE.DEATHS),
       country: 'US',
       stateProvince: 'All',
       countyName: 'All'
@@ -139,7 +140,7 @@ export default Vue.extend({
     }
   },
   async mounted () {
-    await this.currentCases.init()
+    await Promise.all([this.currentCases.init(), this.deaths.init()])
     this.loading = false
   }
 })

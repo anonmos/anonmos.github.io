@@ -1,8 +1,11 @@
 import Country from '@/classes/country'
 import { extractTuples, stripQuotes } from './csv-helper'
 
+export enum MODE {
+  CURRENT_CASES = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv',
+  DEATHS = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Deaths.csv',
+}
 export default class COVIDTimeSeries {
-    private CSV_URL = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv'
     private COUNTRY_COLUMN_NAME = 'Country/Region'
     private SUB_COUNTRY_COLUMN_NAME = 'Province/State'
     private NON_DATE_COLUMNS = ['Province/State', 'Country/Region', 'Lat', 'Long']
@@ -12,6 +15,13 @@ export default class COVIDTimeSeries {
     private rows: string[] = []
     private countries: {[key: string]: Country} = {}
     private rawCSV = ''
+    private downloadUrl: MODE = MODE.CURRENT_CASES
+
+    constructor (downloadUrl?: MODE) {
+      if (downloadUrl) {
+        this.downloadUrl = downloadUrl
+      }
+    }
 
     init = async () => {
       this.rawCSV = await this.getTimeSeries()
@@ -48,10 +58,11 @@ export default class COVIDTimeSeries {
       const gambia = this.countries[GAMBIA_INDEX]
       this.countries.Gambia = gambia
       delete this.countries[GAMBIA_INDEX]
+      delete this.countries.undefined
     }
 
     private getTimeSeries = async () => {
-      const response = await fetch(this.CSV_URL, { method: 'GET' })
+      const response = await fetch(this.downloadUrl, { method: 'GET' })
       return response.text()
     }
 
@@ -76,28 +87,34 @@ export default class COVIDTimeSeries {
       const countryRegionColumnIndex = this.columnsByName[this.COUNTRY_COLUMN_NAME]
       const subRegionColumnIndex = this.columnsByName[this.SUB_COUNTRY_COLUMN_NAME]
 
-      this.rows.forEach((row) => {
-        const splitRow = extractTuples(row)
-        const rowCountry = splitRow[countryRegionColumnIndex]
-        const rowSubRegion = splitRow[subRegionColumnIndex]
+      this.rows.forEach((row, index) => {
+        // Skip the first row of column names
+        if (index > 0) {
+          const splitRow = extractTuples(row)
+          const rowCountry = splitRow[countryRegionColumnIndex]
+          const rowSubRegion = splitRow[subRegionColumnIndex]
 
-        if (this.countries[rowCountry] === undefined) {
-          this.countries[rowCountry] = new Country(rowCountry)
-        }
-
-        const country = this.countries[rowCountry]
-        // Date => count container
-        const rowObject: {[key: string]: number} = {}
-        splitRow.forEach((rowColumnValue, index) => {
-          if (this.NON_DATE_COLUMN_INDEXES.indexOf(index) === -1) {
-            const date = this.columns[index]
-
-            // Create a row object consisting of dates and numbers: {"1/1/20": "15"}
-            rowObject[date] = parseInt(rowColumnValue)
+          if (this.countries[rowCountry] === undefined) {
+            this.countries[rowCountry] = new Country(rowCountry)
           }
-        })
 
-        country.pushRow(rowSubRegion, rowObject)
+          const country = this.countries[rowCountry]
+          // Date => count container
+          const rowObject: {[key: string]: number} = {}
+          splitRow.forEach((rowColumnValue, index) => {
+            if (this.NON_DATE_COLUMN_INDEXES.indexOf(index) === -1) {
+              const date = this.columns[index]
+
+              // Create a row object consisting of dates and numbers: {"1/1/20": "15"}
+              const rowObjectValue = parseInt(rowColumnValue)
+              if (rowObjectValue && !isNaN(rowObjectValue)) {
+                rowObject[date] = parseInt(rowColumnValue)
+              }
+            }
+          })
+
+          country.pushRow(rowSubRegion, rowObject)
+        }
       })
     }
 }
