@@ -27,6 +27,7 @@ export default class StateProvince extends Region {
 
       const dates = Object.keys(row)
       dates.forEach((date) => {
+        this.incrementDateTotal(date, row[date])
         this.counties[name].incrementDateTotal(date, row[date])
       })
     }

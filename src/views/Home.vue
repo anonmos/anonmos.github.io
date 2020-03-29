@@ -7,7 +7,7 @@
     <div v-if="!loading" class="controls">
       <div class="stats">
         <div class="stat">
-          Current Total Cases: {{totalCases}}
+          Total {{mode}}: {{totalCount}}
         </div>
       </div>
       <div class="selector-groups">
@@ -36,12 +36,13 @@
 <script lang="ts">
 // @ is an alias to /src
 import Vue from 'vue'
-import COVIDTimeSeries, { MODE } from '@/utils/fetcher'
 import LineChart from '@/components/LineChart.vue'
-import Region from '../classes/region'
-import StateProvince from '../classes/state-province'
-import Country from '../classes/country'
-import County from '../classes/county'
+import Region from '@/classes/region/region'
+import StateProvince from '@/classes/region/state-province'
+import Country from '@/classes/region/country'
+import County from '@/classes/region/county'
+import COVIDTimeSeries from '../classes/data-retrievers/covid-timeseries'
+import Fetcher from '@/utils/fetcher'
 
 export default Vue.extend({
   name: 'Home',
@@ -51,8 +52,8 @@ export default Vue.extend({
   data () {
     return {
       loading: true,
-      currentCases: new COVIDTimeSeries(MODE.CURRENT_CASES),
-      deaths: new COVIDTimeSeries(MODE.DEATHS),
+      currentCases: undefined as unknown as COVIDTimeSeries,
+      deaths: undefined as unknown as COVIDTimeSeries,
       country: 'US',
       stateProvince: 'All',
       countyName: 'All',
@@ -65,17 +66,19 @@ export default Vue.extend({
       const rval: {labels: string[]; datasets: {label: string; data: number[]}[]} = {
         labels: [],
         datasets: [{
-          label: 'Cases',
+          label: this.mode,
           data: []
         }]
       }
 
       const country = this.getLineChartDataContainer()
-      const sortedDates = country.getSortedDateKeys()
+      const sortedDates = country.getSortedDateKeys().filter((date) => country.dateTotals[date] > 0)
       rval.labels = sortedDates
 
-      sortedDates.forEach((date) => {
-        rval.datasets[0].data.push(country.dateTotals[date])
+      sortedDates.forEach((date: string) => {
+        if (country.dateTotals[date] > 0) {
+          rval.datasets[0].data.push(country.dateTotals[date])
+        }
       })
 
       return rval
@@ -122,7 +125,7 @@ export default Vue.extend({
 
       return rval
     },
-    totalCases (): number {
+    totalCount (): number {
       const dataContainer = this.getLineChartDataContainer()
       const sortedDates = dataContainer.getSortedDateKeys()
       return dataContainer.getDateTotal(sortedDates[sortedDates.length - 1])
@@ -153,7 +156,9 @@ export default Vue.extend({
     }
   },
   async mounted () {
-    await Promise.all([this.currentCases.init(), this.deaths.init()])
+    const dataResults = await new Fetcher().fetchAll()
+    this.currentCases = dataResults.currentCases
+    this.deaths = dataResults.deaths
     this.loading = false
   }
 })

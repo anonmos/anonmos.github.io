@@ -25,14 +25,14 @@ export default class Country extends Region {
   // Special case handling for US data, its regional counts are duplicated
   // in the input data (e.g. broken down by both state and county)
   private pushUSRow (stateProvinceName: string, row: {[key: string]: number}) {
-    // stateProvinceName will either be county, state abbreviation or just the state's full name (ex: Omaha, NE or Nebraska)
+    // stateProvinceName will either be "county, state abbreviation" or just the state's full name (ex: Omaha, NE or Nebraska)
     const cleanSubRegionNameSplit = stripQuotes(stateProvinceName)
     const subRegionNameSplit = cleanSubRegionNameSplit.split(',')
     const state = subRegionNameSplit.length === 1 ? subRegionNameSplit[0].trim() : US_STATES_BY_ABBREVIATION[subRegionNameSplit[1].trim()]
     const county = subRegionNameSplit.length === 1 ? undefined : subRegionNameSplit[0].trim()
-    const isStateValid = state && state?.length > 0 && !this.stateProvinces[state]
+    const isStateValid = state && state?.length > 0
 
-    if (isStateValid) {
+    if (!this.stateProvinces[state]) {
       this.stateProvinces[state] = new StateProvince(state)
     }
 
@@ -51,8 +51,8 @@ export default class Country extends Region {
     }
   }
 
-  private pushNonUSRow (stateProvinceName: string, row: {[key: string]: number}) {
-    if (stateProvinceName.length > 0) {
+  private pushNonUSRow (stateProvinceName: string | undefined, row: {[key: string]: number}) {
+    if (stateProvinceName && stateProvinceName.length > 0) {
       this.stateProvinces[stateProvinceName] = new StateProvince(stateProvinceName)
     }
 
@@ -60,7 +60,7 @@ export default class Country extends Region {
     dates.forEach((date) => {
       // Some countries don't have states or provinces separated out, so increment both
       // if they both exist
-      if (this.stateProvinces[stateProvinceName]) {
+      if (stateProvinceName && stateProvinceName.length > 0) {
         this.stateProvinces[stateProvinceName].incrementDateTotal(date, row[date])
       }
 
