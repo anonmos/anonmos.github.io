@@ -1,5 +1,7 @@
 import Country from '@/classes/region/country'
 import { extractTuples, stripQuotes } from '../../utils/csv-helper'
+import Timer from '@/utils/timer'
+import Logger from '@/utils/logger'
 
 export default abstract class COVIDTimeSeries {
     public COUNTRY_COLUMN_NAME: string | undefined
@@ -13,19 +15,25 @@ export default abstract class COVIDTimeSeries {
     public countries: {[key: string]: Country} = {}
     public rawCSV = ''
 
-    constructor (private downloadUrl: string, subRegionColumnName: string, nonDateColumns: string[], private countryColumnName?: string, private defaultCountryName?: string) {
+    constructor (private downloadPath: string, private sourceDomain: string, subRegionColumnName: string, nonDateColumns: string[], private countryColumnName?: string, private defaultCountryName?: string) {
       this.COUNTRY_COLUMN_NAME = countryColumnName
       this.DEFAULT_COUNTRY_NAME = defaultCountryName
       this.SUB_REGION_COLUMN_NAME = subRegionColumnName
       this.NON_DATE_COLUMNS = nonDateColumns
     }
 
-    init = async () => {
+    init = async (seriesType?: string) => {
+      const timer = new Timer()
       this.rawCSV = await this.getTimeSeries()
+      Logger.debug(`${seriesType || ''} Download time: ${timer.getTimeElapsedinMs()}`)
       this.parseRows()
+      Logger.debug(`${seriesType || ''} Row parse time: ${timer.getTimeElapsedinMs()}`)
       this.parseColumnNames()
+      Logger.debug(`${seriesType || ''} Column name parse time: ${timer.getTimeElapsedinMs()}`)
       this.parseCountryData()
+      Logger.debug(`${seriesType || ''} Country data parse time: ${timer.getTimeElapsedinMs()}`)
       this.fixMisparsedData()
+      Logger.debug(`${seriesType || ''} Misparsed data fix time: ${timer.getTimeElapsedinMs()}`)
     }
 
     getCountries = () => {
@@ -43,7 +51,7 @@ export default abstract class COVIDTimeSeries {
     abstract fixMisparsedData(): void
 
     private getTimeSeries = async () => {
-      const response = await fetch(this.downloadUrl, { method: 'GET' })
+      const response = await fetch(`${this.sourceDomain}${this.downloadPath}`, { method: 'GET' })
       return response.text()
     }
 

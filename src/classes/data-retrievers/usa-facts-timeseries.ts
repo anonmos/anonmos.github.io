@@ -3,14 +3,19 @@ import { extractTuples } from '@/utils/csv-helper'
 import Country from '../region/country'
 
 export enum MODE {
-    CURRENT_CASES = 'https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_confirmed_usafacts.csv',
-    DEATHS = 'https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_deaths_usafacts.csv',
-  }
+  CURRENT_CASES = '/public/data/covid-19/covid_confirmed_usafacts.csv',
+  DEATHS = '/public/data/covid-19/covid_deaths_usafacts.csv',
+}
+
+export enum SOURCE_DOMAIN {
+  DEV = 'http://localhost:3000',
+  PROD = 'https://usafactsstatic.blob.core.windows.net'
+}
 
 export default class UsaFactsTimeSeries extends COVIDTimeSeries implements COVIDTimeSeries {
   private COUNTY_COLUMN_NAME = 'County Name'
-  constructor (downloadUrl: MODE) {
-    super(downloadUrl, 'State', ['countyFIPS', 'County Name', 'State', 'stateFIPS'], undefined, 'US')
+  constructor (downloadPath: MODE, sourceDomain: SOURCE_DOMAIN) {
+    super(downloadPath, sourceDomain, 'State', ['countyFIPS', 'County Name', 'State', 'stateFIPS'], undefined, 'US')
   }
 
   fixMisparsedData () {

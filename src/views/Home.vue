@@ -43,6 +43,8 @@ import Country from '@/classes/region/country'
 import County from '@/classes/region/county'
 import COVIDTimeSeries from '../classes/data-retrievers/covid-timeseries'
 import Fetcher from '@/utils/fetcher'
+import Logger from '../utils/logger'
+import Timer from '../utils/timer'
 
 export default Vue.extend({
   name: 'Home',
@@ -63,6 +65,7 @@ export default Vue.extend({
   },
   computed: {
     lineChartData (): {labels: string[]; datasets: {label: string; data: number[]}[]} {
+      const timer = new Timer()
       const rval: {labels: string[]; datasets: {label: string; data: number[]}[]} = {
         labels: [],
         datasets: [{
@@ -72,14 +75,18 @@ export default Vue.extend({
       }
 
       const country = this.getLineChartDataContainer()
+      timer.reset()
       const sortedDates = country.getSortedDateKeys().filter((date) => country.dateTotals[date] > 0)
+      Logger.debug(`Sorted date keys for country: ${timer.getTimeElapsedinMs()}`)
       rval.labels = sortedDates
 
+      timer.reset()
       sortedDates.forEach((date: string) => {
         if (country.dateTotals[date] > 0) {
           rval.datasets[0].data.push(country.dateTotals[date])
         }
       })
+      Logger.debug(`Sorted date array pushing for chart: ${timer.getTimeElapsedinMs()}`)
 
       return rval
     },
@@ -125,10 +132,11 @@ export default Vue.extend({
 
       return rval
     },
-    totalCount (): number {
+    totalCount (): string {
       const dataContainer = this.getLineChartDataContainer()
       const sortedDates = dataContainer.getSortedDateKeys()
-      return dataContainer.getDateTotal(sortedDates[sortedDates.length - 1])
+      const count = dataContainer.getDateTotal(sortedDates[sortedDates.length - 1])
+      return new Intl.NumberFormat().format(count)
     }
   },
   methods: {

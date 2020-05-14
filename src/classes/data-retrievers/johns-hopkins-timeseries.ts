@@ -3,13 +3,18 @@ import { extractTuples } from '@/utils/csv-helper'
 import Country from '../region/country'
 
 export enum MODE {
-    CURRENT_CASES = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv',
-    DEATHS = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv',
-  }
+  CURRENT_CASES = '/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv',
+  DEATHS = '/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv',
+}
+
+export enum SOURCE_DOMAIN {
+  DEV = 'http://localhost:3000',
+  PROD = 'https://raw.githubusercontent.com'
+}
 
 export default class JohnsHopkinsTimeSeries extends COVIDTimeSeries implements COVIDTimeSeries {
-  constructor (downloadUrl: MODE) {
-    super(downloadUrl, 'Province/State', ['Province/State', 'Country/Region', 'Lat', 'Long'], 'Country/Region')
+  constructor (downloadPath: MODE, sourceDomain: SOURCE_DOMAIN) {
+    super(downloadPath, sourceDomain, 'Province/State', ['Province/State', 'Country/Region', 'Lat', 'Long'], 'Country/Region')
   }
 
   fixMisparsedData () {

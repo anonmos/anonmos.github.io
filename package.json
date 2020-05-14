@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build && cp -r dist/* .",
+    "serve": "cp public/index-dev.html dist/index.html && vue-cli-service serve",
+    "build": "cp public/index.html dist/index.html && vue-cli-service build && cp -r dist/* .",
     "test:unit": "vue-cli-service test:unit",
     "lint": "vue-cli-service lint"
   },
